@@ -5,6 +5,7 @@
 #include<sys/ioctl.h>
 #include<unistd.h>  
 #include<errno.h>
+#include <stdlib.h>
 
 //This function is to be used once we have confirmed that an image is to be sent
 //It should read and output an image file

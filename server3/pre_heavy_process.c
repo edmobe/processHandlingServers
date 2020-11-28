@@ -6,6 +6,54 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include "pre_heavy_process.h"
+
+
+int main(int argc, char *argv[])
+{
+  for (int i = 0; i < argc; i++)
+  {
+    if (strcmp(argv[i], "-p") == 0)
+    {
+      if (argv[i + 1] != NULL)
+      {
+        printf("Port %s\n", argv[i + 1]);
+        i++;
+      }
+      else
+      {
+        printf("You need to set a port\n");
+      }
+    }
+    else if (strcmp(argv[i], "-ip") == 0)
+    {
+      if (argv[i + 1] != NULL)
+      {
+        printf("IP %s\n", argv[i + 1]);
+        i++;
+      }
+      else
+      {
+        printf("You need to set a ip\n");
+      }
+    }
+
+    else if (strcmp(argv[i], "-proc") == 0)
+    {
+      if (argv[i + 1] != NULL)
+      {
+        printf("# Process %s\n", argv[i + 1]);
+        i++;
+      }
+      else
+      {
+        printf("You need to set a number of process\n");
+      }
+    }
+  }
+}
+
+
 
 int receive_image(int socket, char *ip_client)
 { // Start function
@@ -144,46 +192,3 @@ int server()
   return 0;
 }
 
-int main(int argc, char *argv[])
-{
-  for (int i = 0; i < argc; i++)
-  {
-    if (strcmp(argv[i], "-p") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("Port %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a port\n");
-      }
-    }
-    else if (strcmp(argv[i], "-ip") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("IP %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a ip\n");
-      }
-    }
-
-    else if (strcmp(argv[i], "-proc") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("# Process %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a number of process\n");
-      }
-    }
-  }
-}
