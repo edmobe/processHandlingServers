@@ -133,8 +133,8 @@ int main(int argc, char *argv[]) {
 	char img_ext[4];
 	char name_str[name_len+1];
 
-    for (int i = 1; i < 4; i ++) {
-        img_ext[3-i] = argv[3][name_len-i];
+    for (int i = 0; i < 3; i ++) {
+        img_ext[2-i] = argv[3][name_len-i];
     }
 	img_ext[3] = '\0';
 
