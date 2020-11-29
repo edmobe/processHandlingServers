@@ -11,11 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FILES=main.c sobel.c file_operations.c
+FILES=server1.c sobel.c file_operations.c
 OBJS=$(FILES:.c=.o)
 ARQUIVE=libsobel.a
-EXE=sobel
-FLAGS=-std=c99 -g -lm
+EXE=server1
+FLAGS= -g -lm
 
 all: $(OBJS) archive
 	gcc $(OBJS) -o $(EXE) $(FLAGS)

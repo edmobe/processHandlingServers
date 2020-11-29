@@ -30,25 +30,18 @@ union LongChar {
     long mylong;
 };
 
-// int readcolor(char *image);
-
-// Function designed for file(picture) transfer between client and server. 
-void func(int sockfd);
-
-// Read
-int buff_read(int sockfd, char buff[MAX]);
-
-int receive_image(int sockfd);
-
 // Driver function 
 int main(int argc , char *argv[]) 
 { 
-	int sockfd, connfd, len, nBytes; 
+	int sockfd, connfd, len, nBytes;
+    int width, height; 
 	struct sockaddr_in servaddr, cli;
     struct in_addr **addr_list;
     // int addrlen = sizeof(servaddr);
     // char net_buf[NET_BUF_SIZE]; 
 
+    byte *rgb, *gray, *sobel_h_res, *sobel_v_res, *contour_img;
+    
     if (argc != NO_INPUT) {
         printf("ERROR: num of param #%d, param needed #%d\n", argc, NO_INPUT);
         exit(1);
@@ -92,9 +85,10 @@ int main(int argc , char *argv[])
 
     char buff[MAX+1];
     char *name;
-    char *msg_rcv = "Image processed";
+    char *msg_rcv1 = "Metadata processed";
+    char *msg_rcv2 = "Image processed";
 	int n;
-    FILE *image;
+    FILE *image, *fp;
     int first = 0;
     int counter = 0;
     ssize_t nread;
@@ -116,8 +110,9 @@ int main(int argc , char *argv[])
 
         printf("Host connected , ip %s , port %d \n" , 
             inet_ntoa(cli.sin_addr) , ntohs(cli.sin_port));
-
-        while (TRUE) {
+        
+        int counter1 = 0;
+        while (counter1<1) {
 
             char temp_dir[100] = "../imgs/";
 
@@ -170,15 +165,20 @@ int main(int argc , char *argv[])
             strcat(temp_dir, name);
             strcat(temp_dir,"\0");
             printf("%s\n",temp_dir);
-            
+
+            // First response message
+            printf("Responding 1 to client\n");
+            bzero(buff, sizeof(buff)); 
+            write(connfd, msg_rcv1, MAX);
             
             //Read Picture Byte Array
             printf("Reading Picture Byte Array\n");
-            char p_array[size+1];
+            char p_array[size + 1];
             if((nread = read(connfd, p_array, size)) == 0) {
                 fclose(image);
                 break;
             }
+
             if (counter < 100) {
                 image = fopen(temp_dir, "w");
 
@@ -187,9 +187,55 @@ int main(int argc , char *argv[])
                     exit(0);
                 }
 
-
                 fwrite(p_array, 1, size, image); 
                 fclose(image);
+
+                // Read file to rgb and get size
+                readFile(temp_dir, &rgb, size);
+
+                if (size == 786432L) {
+                    width = 512;
+                    height = 512;
+                } else if (size == 6220800L) {
+                    width = 1920;
+                    height = 1080;
+                } else {
+                    width = 512;
+                    height = 512;
+                }
+
+                int gray_size = sobelFilter(p_array, &gray, &sobel_h_res, &sobel_v_res, &contour_img, width, height);
+
+                // Write sobel img to a file
+                strcat(temp_dir,".gray\0");
+                writeFile(temp_dir, contour_img, gray_size);
+
+                char path[100] = "convert -size ";
+
+                char size_str[7];
+                sprintf(size_str, "%dx%d ", width, height);
+                strcat(path, size_str);
+                strcat(path, "-depth 8 ");
+                
+                strcat(path, temp_dir);
+                strcat(temp_dir,".png\0");
+                strcat(path, " ");
+                strcat(path, temp_dir);
+                /* Open the command for reading. */
+                
+                fp = popen(path, "r");
+                if (fp == NULL) {
+                    printf("ERROR: Failed to run command\n" );
+                    exit(1);
+                }
+
+                // close 
+                pclose(fp);
+
+                counter ++;
+
+            } else {
+                int gray_size = sobelFilter(p_array, &gray, &sobel_h_res, &sobel_v_res, &contour_img, width, height);
             }
             // long counter = 0L;
             // while(counter < size) {
@@ -199,22 +245,13 @@ int main(int argc , char *argv[])
             //     counter += sizeof(buff);
             // }
 
-            printf("Responding to client\n");
-            bzero(buff, sizeof(buff)); 
-            write(connfd, msg_rcv, MAX);
+            printf("Responding 2 to client\n");
+            bzero(buff, sizeof(buff));
+            write(connfd, msg_rcv2, MAX);
             
-            if (counter < 100) {
-                counter ++;
-            }
-
+            counter1 ++;
         }
 
-        // printf("Confirming zeroes\n");
-        // while ((nread = read(sockfd, p_array, MAX)) != 0) {
-
-        // }
-
-        // break; 
         close(connfd);
     }
 

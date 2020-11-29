@@ -251,6 +251,8 @@ int main(int argc , char *argv[])
             }
             
             close(connfd);
+            close(sockfd);
+            exit(0);
         } else {
             //parent process
             close(connfd);

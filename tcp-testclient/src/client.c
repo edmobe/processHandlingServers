@@ -119,8 +119,6 @@ int main(int argc, char *argv[]) {
     } 
     else
         printf("Socket successfully created..\n"); 
-    
-    char buff[MAX+1];
 
     // connect the client socket to server socket 
     if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) { 
@@ -131,6 +129,10 @@ int main(int argc, char *argv[]) {
         printf("connected to the server..\n"); 
 
     int first = 0;
+    char buff[MAX+1];
+    // name_str[name_len-1] = 'g';
+    // name_str[name_len-2] = 'n';
+    // name_str[name_len-3] = 'p';
 
     // This while is the times that the client comunicates with the server
     // after the handshake. Disconnects if the server leaves the handshake.
@@ -155,7 +157,11 @@ int main(int argc, char *argv[]) {
         bzero(buff, sizeof(buff));
         write(sockfd, name_str, MAX);
         
-        /*
+        // Recieves answer from server
+        bzero(buff, sizeof(buff)); 
+        read(sockfd, buff, MAX); 
+        printf("From Server : %s \n", buff);
+        
         //Send Picture as Byte Array (without need of a buffer as large as the image file)
         printf("Sending Picture as Byte Array\n");
         // bzero(buff, sizeof(buff));
@@ -166,16 +172,14 @@ int main(int argc, char *argv[]) {
         img_array[size] = '\0';
         // while(!feof(picture)) {
         write(sockfd, img_array, size);
-        fseek(picture, 0, SEEK_SET);*/
+        fseek(picture, 0, SEEK_SET);
             // nb = fread(buff, 1, sizeof(buff), picture);
             // no need to bzero
         // }
         
-        // break;
-        
         // Recieves answer from server
         bzero(buff, sizeof(buff)); 
-        read(sockfd, buff, MAX); 
+        read(sockfd, buff, MAX);
         printf("From Server : %s \n", buff);
 
         // // Sends zeroes
