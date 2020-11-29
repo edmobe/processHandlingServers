@@ -22,8 +22,8 @@
 // For using it the parameters are like described in the project specification
 // but without the threads and times.
 
-// Ex.: ./client <IP> <PORT> <RELATIVE_DIR_IMG>
-// How it works: ./client 127.0.0.1 9090 ../imgs/img.png
+// Ex.: ./client <IP> <PORT> <RELATIVE_DIR_IMG> <NUM_THREADS> <NUM_ITERATIONS>
+// How it works: ./client 127.0.0.1 9090 ../imgs/img.png 0 1
 
 //This function is to be used once we have confirmed that an image is to be sent
 //It should read and output an image file
