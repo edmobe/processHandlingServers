@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FILES=server1.c sobel.c file_operations.c
+FILES=server1.c ../../filter/src/sobel.c ../../filter/src/file_operations.c
 OBJS=$(FILES:.c=.o)
 ARQUIVE=libsobel.a
 EXE=server1

@@ -13,9 +13,9 @@
 #include <arpa/inet.h>    //socket close     
 
 // For image processing
-#include "macros.h"
-#include "sobel.h"
-#include "file_operations.h"
+#include "../../filter/src/macros.h"
+#include "../../filter/src/sobel.h"
+#include "../../filter/src/file_operations.h"
 
 #define MAX 80
 #define TRUE   1  
