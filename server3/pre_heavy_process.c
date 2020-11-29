@@ -6,62 +6,20 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include "pre_heavy_process.h"
-
-
-int main(int argc, char *argv[])
-{
-  for (int i = 0; i < argc; i++)
-  {
-    if (strcmp(argv[i], "-p") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("Port %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a port\n");
-      }
-    }
-    else if (strcmp(argv[i], "-ip") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("IP %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a ip\n");
-      }
-    }
-
-    else if (strcmp(argv[i], "-proc") == 0)
-    {
-      if (argv[i + 1] != NULL)
-      {
-        printf("# Process %s\n", argv[i + 1]);
-        i++;
-      }
-      else
-      {
-        printf("You need to set a number of process\n");
-      }
-    }
-  }
-}
-
-
+#include "../general/queue.c"
 
 int receive_image(int socket, char *ip_client)
 { // Start function
-
   int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
 
   char imagearray[10241], verify = '1';
   FILE *image;
+  char path[20] = "image_";
+  char extension[5] = ".jpg";
+  char number_str[10];
+  sprintf(number_str, "%d", sizeQueue);
+  strcat(path, number_str);
+  strcat(path, extension);
 
   //Find the size of the image
   do
@@ -80,7 +38,7 @@ int receive_image(int socket, char *ip_client)
   printf("Reply sent\n");
   printf(" \n");
 
-  image = fopen("t.png", "w");
+  image = fopen(path, "w");
 
   if (image == NULL)
   {
@@ -131,13 +89,13 @@ int receive_image(int socket, char *ip_client)
       packet_index++;
     }
   }
-
+  enqueue(path);
   fclose(image);
 
   return 1;
 }
 
-int server()
+int server(int port)
 {
   int socket_desc, new_socket, c, read_size, buffer = 0;
   struct sockaddr_in server, client;
@@ -153,7 +111,8 @@ int server()
   //Prepare the sockaddr_in structure
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = INADDR_ANY;
-  server.sin_port = htons(8080);
+  server.sin_port = htons(port);
+  printf("%d\n", server.sin_addr.s_addr);
   //Bind
   if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
   {
@@ -169,6 +128,7 @@ int server()
   //Accept and incoming connection
   puts("Waiting for incoming connections...");
   c = sizeof(struct sockaddr_in);
+
   while (1)
   {
 
@@ -192,3 +152,7 @@ int server()
   return 0;
 }
 
+int main(int argc, char *argv[])
+{
+  server(8000);
+}
