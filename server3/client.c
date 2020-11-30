@@ -96,8 +96,6 @@ void client_send(char *ip, int port, char *filename)
 
 int main(int argc, char const *argv[])
 {
-
-  client_send("127.0.0.1", 8000, "imagen.jpg");
-
+  client_send("127.0.0.1", 8100, "imagen.jpg");
   return 0;
 }

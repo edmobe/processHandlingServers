@@ -9,7 +9,7 @@ struct node
 
 struct node *front = NULL;
 struct node *rear = NULL;
-int size = 0;
+int sizeQueue = 0;
 int isQueueEmpty()
 {
     if (front == NULL)
@@ -35,7 +35,7 @@ void enqueue(char *path)
         rear->next = new;
         rear = new;
     }
-    size++;
+    sizeQueue++;
 }
 
 char *dequeue()
@@ -55,7 +55,7 @@ char *dequeue()
         }
 
         free(erase);
-        size--;
+        sizeQueue--;
         return path;
     }
 
@@ -67,7 +67,7 @@ char *dequeue()
 
 void printQueue()
 {
-    printf("Queue size is %d\n", size);
+    printf("Queue size is %d\n", sizeQueue);
     struct node *temp = front;
     while (temp != NULL)
     {
