@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
-
+#include "constant.h"
 //This function is to be used once we have confirmed that an image is to be sent
 //It should read and output an image file
 
@@ -96,6 +96,6 @@ void client_send(char *ip, int port, char *filename)
 
 int main(int argc, char const *argv[])
 {
-  client_send("127.0.0.1", 8100, "imagen.jpg");
+  client_send("127.0.0.1", portConst, "../imgs/imagen.jpg");
   return 0;
 }
