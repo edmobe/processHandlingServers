@@ -8,25 +8,43 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#include <dirent.h>
 #include "../../general/queue.c"
 #include "constant.h"
 
-void handleContinuesSignal(int sig)
+int countFiles()
 {
-  printf("Process %d resume\n", getpid());
+  int file_count = 0;
+  DIR *dirp;
+  struct dirent *entry;
+  dirp = opendir("../imgs");
+  while ((entry = readdir(dirp)) != NULL)
+  {
+    if (entry->d_type == DT_REG)
+    {
+      file_count++;
+    }
+  }
+  closedir(dirp);
+  return file_count;
 }
 
 int receive_image(int socket)
 { // Start function
-
+  printf("Attending client %d with process %d\n", socket, getpid());
+  int file_count = countFiles();
   int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
   char imagearray[10241], verify = '1';
   FILE *image;
   char path[30] = "../imgs/image_";
   char extension[5] = ".jpg";
   char number_str[10];
-  sprintf(number_str, "%d", sizeQueue);
+  char pid[5];
+  sprintf(number_str, "%d", file_count);
+  sprintf(pid, "%d", getpid());
   strcat(path, number_str);
+  strcat(path, "_");
+  strcat(path, pid);
   strcat(path, extension);
 
   //Find the size of the image
@@ -96,7 +114,7 @@ int receive_image(int socket)
       packet_index++;
     }
   }
-  enqueue(path);
+  //enqueue(path);
   fclose(image);
 
   return 1;
@@ -104,7 +122,8 @@ int receive_image(int socket)
 
 int server(int port)
 {
-  int processes = 2, procn;
+  int processes = 10, procn;
+  int pictures = 0;
   int socket_desc, new_socket, c, read_size, buffer = 0;
   struct sockaddr_in server, client;
   int fd[2];
@@ -135,51 +154,23 @@ int server(int port)
   //Listen
   listen(socket_desc, 10);
 
-  /*if (pid[procn] == 0)
-  {
-    wait(NULL);
-    close(fd[1]);
-    char num[10];
-    read(fd[0], num, 10);
-    int n = atoi(num);
-    printf("Received %d was %d\n", getpid(), n);
-    receive_image(n);
-  }*/
-
-  //Accept and incoming connection
   puts("Waiting for incoming connections...");
   c = sizeof(struct sockaddr_in);
+  printf("Creating %d processes\n", processes);
+
   for (procn = 0; procn < processes; procn++)
   {
     pid[procn] = fork();
-    //pipe(fd[procn]);
     if (pid[procn] == 0)
     {
       break;
     }
   }
+
   while (1)
   {
 
     if (pid[procn] == 0)
-    {
-
-      signal(SIGCONT, handleContinuesSignal);
-      pause();
-      wait(NULL);
-      close(fd[1]); // close write fd
-      char arr[10];
-      read(fd[0], &arr, 10); // read while EOF
-      strtok(arr, " ");
-      int c = atoi(arr);
-      printf("Received %d\n", c);
-      close(socket_desc);
-      receive_image(c);
-      close(c);
-      /*signal(SIGCONT, handleContinuesSignal);
-      pause();*/
-    }
-    else
     {
       if ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c)))
       {
@@ -190,25 +181,17 @@ int server(int port)
         perror("Accept Failed");
         return 1;
       }
-
-      for (int i = 0; i < processes; i++)
-      {
-        printf("[Parent] newsocket %d\n", new_socket);
-        kill(pid[i], SIGCONT);
-        close(fd[0]); //close read
-        char str[10];
-        sprintf(str, "%d", new_socket);
-        write(fd[1], str, 10);
-        close(fd[1]);
-        break;
-      }
+      receive_image(new_socket);
+    }
+    else
+    {
+      close(socket_desc);
     }
 
     //receive_image(new_socket, inet_ntoa(client.sin_addr));
   }
   close(socket_desc);
   fflush(stdout);
-  //  close(socket_desc);
   return 0;
 }
 
