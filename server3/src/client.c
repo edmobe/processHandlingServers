@@ -101,7 +101,7 @@ int main(int argc, char const *argv[])
   {
     char str[3];
     sprintf(str, "%d", i % 10);
-    char path[15] = "imagen";
+    char path[30] = "imagesToSend/imagen";
     strcat(path, str);
     strcat(path, ".jpg");
     printf("Sending %s\n", path);
