@@ -2,16 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <signal.h>
 #include <errno.h>
 #include <time.h>
 #include "../general/queue.c"
 
-int receive_image(int socket, char *ip_client)
-{ // Start function
-  int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
+void handleContinuesSignal(int sig)
+{
+  printf("Process %d resume\n", getpid());
+}
 
+int receive_image(int socket)
+{ // Start function
+  printf("Client %d from process %d\n", socket, getpid());
+  int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
   char imagearray[10241], verify = '1';
   FILE *image;
   char path[20] = "image_";
@@ -97,10 +104,14 @@ int receive_image(int socket, char *ip_client)
 
 int server(int port)
 {
+  int processes = 3, procn;
   int socket_desc, new_socket, c, read_size, buffer = 0;
   struct sockaddr_in server, client;
+  int fd[2];
+  pipe(fd);
   char *readin;
-
+  pid_t pid[processes];
+  signal(SIGCONT, handleContinuesSignal);
   //Create socket
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_desc == -1)
@@ -125,10 +136,20 @@ int server(int port)
   //Listen
   listen(socket_desc, 3);
 
+  /*if (pid[procn] == 0)
+  {
+    wait(NULL);
+    close(fd[1]);
+    char num[10];
+    read(fd[0], num, 10);
+    int n = atoi(num);
+    printf("Received %d was %d\n", getpid(), n);
+    receive_image(n);
+  }*/
+
   //Accept and incoming connection
   puts("Waiting for incoming connections...");
   c = sizeof(struct sockaddr_in);
-
   while (1)
   {
 
@@ -136,23 +157,39 @@ int server(int port)
     {
       puts("Connection accepted");
     }
-
-    fflush(stdout);
-
     if (new_socket < 0)
     {
       perror("Accept Failed");
       return 1;
     }
+    for (procn = 0; procn < processes; procn++)
+    {
+      pid[procn] = fork();
+      if (pid[procn] == 0)
+      {
+        break;
+      }
+    }
 
-    receive_image(new_socket, inet_ntoa(client.sin_addr));
+    if (pid[procn] == 0)
+    {
+      close(socket_desc);
+      while (1)
+      {
+        receive_image(new_socket);
+        close(new_socket);
+      }
+    }
+
+    //receive_image(new_socket, inet_ntoa(client.sin_addr));
   }
   close(socket_desc);
   fflush(stdout);
+  //  close(socket_desc);
   return 0;
 }
 
 int main(int argc, char *argv[])
 {
-  server(8000);
+  server(8100);
 }
