@@ -195,12 +195,22 @@ int main(int argc, char *argv[]) {
 
 	printf("Abs time %f\n", end - start);
 
-	if (atoi(argv[2]) == 9090) {
-		fp = fopen("../../server1/log.json", "w");
 
-		fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+	switch (atoi(argv[2])) {
+		case 9090: 
+			fp = fopen("../../server1/log.json", "w");
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+			fclose(fp);
+			break;
 
-		fclose(fp);
+		case 8888:
+			fp = fopen("../../server2/log.json", "w");
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+			fclose(fp);
+			break;
+
+		default:
+			break;
 	}
 
     return 0;
