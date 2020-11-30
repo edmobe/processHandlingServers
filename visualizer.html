@@ -30,7 +30,11 @@
 
     <script>
       var color = Chart.helpers.color;
+      var colorNames = Object.keys(window.chartColors);
+
       var graph1Data;
+      var graph2Data;
+      var graph3Data;
       $.getJSON('server1/log.json', function (json) {
         graph1Data = {
           datasets: [
@@ -51,62 +55,68 @@
             },
           ],
         };
-      });
-      $.getJSON('server2/log.json', function (json) {
-        graph1Data.datasets.push({
-          label: 'Server 2',
-          backgroundColor: color(window.chartColors.blue)
-            .alpha(0.5)
-            .rgbString(),
-          borderColor: window.chartColors.blue,
-          borderWidth: 1,
-          pointRadius: 10,
-          data: [
-            {
-              x: json.totalRequests,
-              y: json.elapsedTime,
-            },
-          ],
-        });
-      });
-      $.getJSON('server3/log.json', function (json) {
-        graph1Data.datasets.push({
-          label: 'Server 3',
-          backgroundColor: color(window.chartColors.yellow)
-            .alpha(0.5)
-            .rgbString(),
-          borderColor: window.chartColors.yellow,
-          borderWidth: 1,
-          pointRadius: 10,
-          data: [
-            {
-              x: json.totalRequests,
-              y: json.elapsedTime,
-            },
-          ],
-        });
-      });
 
-      window.onload = function () {
-        var chart1 = document.getElementById('canvas').getContext('2d');
-        var chart2 = document.getElementById('canvas2').getContext('2d');
-        var chart3 = document.getElementById('canvas3').getContext('2d');
+        $.getJSON('server2/log.json', function (json) {
+          graph1Data.datasets.push({
+            label: 'Server 2',
+            backgroundColor: color(window.chartColors.blue)
+              .alpha(0.5)
+              .rgbString(),
+            borderColor: window.chartColors.blue,
+            borderWidth: 1,
+            pointRadius: 10,
+            data: [
+              {
+                x: json.totalRequests,
+                y: json.elapsedTime,
+              },
+            ],
+          });
 
-        window.myBar = new Chart(chart1, {
-          type: 'scatter',
-          data: graph1Data,
-          options: {
-            showLines: true,
-            responsive: true,
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text:
-                'Gráfica 1: Cantidad de solicitudes por tiempo de ejecución total',
-            },
-            /*
+          $.getJSON('server3/log.json', function (json) {
+            graph1Data.datasets.push({
+              label: 'Server 3',
+              backgroundColor: color(window.chartColors.yellow)
+                .alpha(0.5)
+                .rgbString(),
+              borderColor: window.chartColors.yellow,
+              borderWidth: 1,
+              pointRadius: 10,
+              data: [
+                {
+                  x: json.totalRequests,
+                  y: json.elapsedTime,
+                },
+              ],
+            });
+
+            graph2Data = JSON.parse(JSON.stringify(graph1Data));
+
+            for (let i = 0; i < 3; i++) {
+              graph2Data.datasets[i].data[0].y =
+                graph2Data.datasets[i].data[0].y /
+                graph2Data.datasets[i].data[0].x;
+            }
+
+            var chart1 = document.getElementById('canvas').getContext('2d');
+            var chart2 = document.getElementById('canvas2').getContext('2d');
+            var chart3 = document.getElementById('canvas3').getContext('2d');
+
+            window.myBar = new Chart(chart1, {
+              type: 'scatter',
+              data: graph1Data,
+              options: {
+                showLines: true,
+                responsive: true,
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text:
+                    'Gráfica 1: Cantidad de solicitudes por tiempo de ejecución total',
+                },
+                /*
             scales: {
               yAxes: [
                 {
@@ -117,46 +127,42 @@
               ],
             },
             */
-          },
-        });
-        var graph2Data = graph1Data;
-        for (let i = 0; i < 3; i++) {
-          graph2Data.datasets[i].data[0].y =
-            graph1Data.datasets[i].data[0].y / graph1Data.datasets[i].data[0].x;
-        }
+              },
+            });
 
-        window.myBar = new Chart(chart2, {
-          type: 'scatter',
-          data: graph2Data,
-          options: {
-            responsive: true,
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text:
-                'Gráfica 2: Cantidad de solicitudes por tiempo promedio de ejecución',
-            },
-          },
-        });
-        window.myBar = new Chart(chart3, {
-          type: 'scatter',
-          data: graph2Data,
-          options: {
-            responsive: true,
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text: 'Gráfica 3: POR DEFINIR',
-            },
-          },
-        });
-      };
+            window.myBar = new Chart(chart2, {
+              type: 'scatter',
+              data: graph2Data,
+              options: {
+                responsive: true,
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text:
+                    'Gráfica 2: Cantidad de solicitudes por tiempo promedio de ejecución',
+                },
+              },
+            });
 
-      var colorNames = Object.keys(window.chartColors);
+            window.myBar = new Chart(chart3, {
+              type: 'scatter',
+              data: graph2Data,
+              options: {
+                responsive: true,
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'Gráfica 3: POR DEFINIR',
+                },
+              },
+            });
+          });
+        });
+      });
     </script>
   </body>
 </html>
