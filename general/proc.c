@@ -24,25 +24,21 @@ void handleContinuesSignal(int sig)
 
 int main(int argc, char const *argv[])
 {
-    /*pid_t pid = fork();
+    pid_t pid = fork();
     if (pid == 0)
     {
-        char *path = "image_0.jpg";
-        char *name = strtok(path, ".");
-        printf("%s\n", name);
-        
+
         system("convert image_0.jpg image_0.rgb");
         system("../filter/src/sobel image_0.rgb image_0.gray 1072x1340");
         system("convert -size 1072x1340 -depth 8 image_0.gray image_0.jpg");
         system("rm image_0.gray");
         system("rm image_0.rgb");
-        
     }
     else
     {
         printf("Soy el padre\n");
     }
-    */
+
     /*enqueue("imagen.jpg");
 
     char cmd[100];
@@ -52,22 +48,6 @@ int main(int argc, char const *argv[])
 
     //system("identify -format '%wx%h' imagen.jpg");
     */
-
-    pid_t pid = fork();
-    if (pid == 0)
-    {
-        printf("%d\n", getpid());
-        signal(SIGCONT, handleContinuesSignal);
-        pause();
-    }
-    else
-    {
-        sleep(5);
-
-        kill(pid, SIGCONT);
-        sleep(2);
-        kill(pid, SIGKILL);
-    }
 
     return 0;
 }

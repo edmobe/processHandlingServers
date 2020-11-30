@@ -10,9 +10,9 @@
 #include <time.h>
 #include <dirent.h>
 #include "../../general/queue.c"
-#include "constant.h"
+#include "../../general/commands.c"
 
-int countFiles()
+/*int countFiles()
 {
   int file_count = 0;
   DIR *dirp;
@@ -26,13 +26,13 @@ int countFiles()
     }
   }
   closedir(dirp);
-  return file_count;
-}
+  return file_count / 2;
+}*/
 
-int receive_image(int socket)
+int receive_image(int socket, int file_count)
 { // Start function
   printf("Attending client %d with process %d\n", socket, getpid());
-  int file_count = countFiles();
+  //int file_count = countFiles();
   int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
   char imagearray[10241], verify = '1';
   FILE *image;
@@ -116,14 +116,71 @@ int receive_image(int socket)
   }
   //enqueue(path);
   fclose(image);
+  /*
+  char path2[50] = "identify -format '%wx%h' ";
+  strcat(path2, temp_dir);
+  fp = popen(path2, "r");
+  */
 
+  char cmd[100];
+  strcpy(cmd, path);
+  convertToFormat(cmd, ".rgb");
+  system(cmd);
+  FILE *fp;
+  char path2[50] = "identify -format '%wx%h' ";
+  strcat(path2, path);
+  fp = popen(path2, "r");
+  if (fp == NULL)
+  {
+    printf("ERROR: Failed to run command\n");
+    return 1;
+  }
+
+  char buf_temp[100];
+  char *str = NULL;
+  char *temp = NULL;
+  unsigned int size1 = 1; // start with size of 1 to make room for null terminator
+  unsigned int strlength;
+  while (fgets(buf_temp, sizeof(buf_temp), fp) != NULL)
+  {
+    strlength = strlen(buf_temp);
+    temp = realloc(str, size1 + strlength); // allocate room for the buf that gets appended
+    if (temp != NULL)
+    {
+      str = temp;
+    }
+    strcpy(str + size1 - 1, buf_temp); // append buffer to str
+    size1 += strlength;
+  }
+  // close
+  pclose(fp);
+  char toRgb[20], toGray[20], cmdConvertFinal[20];
+  strcpy(toRgb, path);
+  strcpy(toGray, path);
+
+  convertString(toRgb, ".rgb ");
+  convertString(toGray, ".gray ");
+  char cmdApplyFilter[40] = "../../filter/src/sobel ";
+  strcat(cmdApplyFilter, toRgb);
+  strcat(cmdApplyFilter, toGray);
+  strcat(cmdApplyFilter, str);
+  system(cmdApplyFilter);
+  strcpy(cmdConvertFinal, toGray);
+  convertToFormatSize(cmdConvertFinal, str, ".jpg");
+  system(cmdConvertFinal);
+  char rm1[20] = "rm ", rm2[20] = "rm ";
+  strcat(rm1, toRgb);
+  system(rm1);
+  strcat(rm2, toGray);
+  system(rm2);
   return 1;
 }
 
-int server(int port)
+int server(int port, int processes)
 {
-  int processes = 10, procn;
+  int procn;
   int pictures = 0;
+  int file_count = 0;
   int socket_desc, new_socket, c, read_size, buffer = 0;
   struct sockaddr_in server, client;
   int fd[2];
@@ -181,7 +238,8 @@ int server(int port)
         perror("Accept Failed");
         return 1;
       }
-      receive_image(new_socket);
+      receive_image(new_socket, file_count);
+      file_count++;
     }
     else
     {
@@ -197,5 +255,16 @@ int server(int port)
 
 int main(int argc, char *argv[])
 {
-  server(portConst);
+  int port;
+  int processes;
+
+  if (strcmp(argv[1], "-proc") == 0)
+  {
+    processes = atoi(argv[2]);
+    server(8070, processes);
+  }
+  else
+  {
+    puts("You need to set a number of processes, use -proc #PROCESSES");
+  }
 }
