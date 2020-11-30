@@ -32,32 +32,25 @@
       var color = Chart.helpers.color;
       var colorNames = Object.keys(window.chartColors);
 
-      var graph1Data;
-      var graph2Data;
-      var graph3Data;
-      $.getJSON('server1/log.json', function (json) {
-        graph1Data = {
-          datasets: [
-            {
-              label: 'Server 1',
-              backgroundColor: color(window.chartColors.red)
-                .alpha(0.5)
-                .rgbString(),
-              borderColor: window.chartColors.red,
-              borderWidth: 1,
-              pointRadius: 10,
-              data: [
-                {
-                  x: json.totalRequests,
-                  y: json.elapsedTime,
-                },
-              ],
-            },
-          ],
-        };
+      var serverData = {
+        server1: {},
+        server2: {},
+        server3: {},
+      };
 
-        $.getJSON('server2/log.json', function (json) {
-          graph1Data.datasets.push({
+      var graph1Data = {
+        datasets: [
+          {
+            label: 'Server 1',
+            backgroundColor: color(window.chartColors.red)
+              .alpha(0.5)
+              .rgbString(),
+            borderColor: window.chartColors.red,
+            borderWidth: 1,
+            pointRadius: 10,
+            data: [],
+          },
+          {
             label: 'Server 2',
             backgroundColor: color(window.chartColors.blue)
               .alpha(0.5)
@@ -65,38 +58,70 @@
             borderColor: window.chartColors.blue,
             borderWidth: 1,
             pointRadius: 10,
-            data: [
-              {
-                x: json.totalRequests,
-                y: json.elapsedTime,
-              },
-            ],
-          });
+            data: [],
+          },
+          {
+            label: 'Server 3',
+            backgroundColor: color(window.chartColors.yellow)
+              .alpha(0.5)
+              .rgbString(),
+            borderColor: window.chartColors.yellow,
+            borderWidth: 1,
+            pointRadius: 10,
+            data: [],
+          },
+        ],
+      };
+      var graph2Data;
+      var graph3Data;
 
+      graph2Data = JSON.parse(JSON.stringify(graph1Data));
+      graph3Data = JSON.parse(JSON.stringify(graph1Data));
+
+      $.getJSON('server1/log.json', function (json) {
+        serverData.server1 = json;
+        $.getJSON('server2/log.json', function (json) {
+          serverData.server2 = json;
           $.getJSON('server3/log.json', function (json) {
-            graph1Data.datasets.push({
-              label: 'Server 3',
-              backgroundColor: color(window.chartColors.yellow)
-                .alpha(0.5)
-                .rgbString(),
-              borderColor: window.chartColors.yellow,
-              borderWidth: 1,
-              pointRadius: 10,
-              data: [
-                {
-                  x: json.totalRequests,
-                  y: json.elapsedTime,
-                },
-              ],
+            serverData.server3 = json;
+
+            console.log(serverData);
+
+            graph1Data.datasets[0].data.push({
+              x: serverData.server1.totalRequests,
+              y: serverData.server1.elapsedTime,
             });
 
-            graph2Data = JSON.parse(JSON.stringify(graph1Data));
+            graph1Data.datasets[1].data.push({
+              x: serverData.server2.totalRequests,
+              y: serverData.server2.elapsedTime,
+            });
 
-            for (let i = 0; i < 3; i++) {
-              graph2Data.datasets[i].data[0].y =
-                graph2Data.datasets[i].data[0].y /
-                graph2Data.datasets[i].data[0].x;
-            }
+            graph1Data.datasets[2].data.push({
+              x: serverData.server3.totalRequests,
+              y: serverData.server3.elapsedTime,
+            });
+
+            graph2Data.datasets[0].data.push({
+              x:
+                serverData.server1.totalRequests /
+                serverData.server1.elapsedTime,
+              y: serverData.server1.elapsedTime,
+            });
+
+            graph2Data.datasets[1].data.push({
+              x:
+                serverData.server2.totalRequests /
+                serverData.server2.elapsedTime,
+              y: serverData.server2.elapsedTime,
+            });
+
+            graph2Data.datasets[2].data.push({
+              x:
+                serverData.server3.totalRequests /
+                serverData.server3.elapsedTime,
+              y: serverData.server3.elapsedTime,
+            });
 
             var chart1 = document.getElementById('canvas').getContext('2d');
             var chart2 = document.getElementById('canvas2').getContext('2d');
@@ -156,7 +181,7 @@
                 },
                 title: {
                   display: true,
-                  text: 'Gráfica 3: POR DEFINIR',
+                  text: 'Gráfica 3: Píxeles procesados por tiempo de ejecución',
                 },
               },
             });
