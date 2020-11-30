@@ -50,13 +50,14 @@ int send_image(int socket, char *filename)
     //Send Picture Size
     write(socket, (void *)&size, sizeof(int));
 
-    //Send Picture as Byte Array
-
     do
     { //Read while we get errors that are due to signals.
       	stat = read(socket, &read_buffer, 255);
 
     } while (stat < 0);
+
+	//Send Picture as Byte Array
+	puts("Sending Image");
 
     while (!feof(picture))
     {
