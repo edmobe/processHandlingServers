@@ -232,27 +232,33 @@ int seq_server(int port)
         // close
         pclose(fp);
 
-        int offset1 = 0;
-        int offset2 = 0;
-        int post = 0;
-        while (*(str+offset1) != '\0') {
-            if (*(str+offset1) != 'x') {
-                buf_temp[offset2] = *(str+offset1);
-                offset1++;
-                offset2++;
-            } else {
-                buf_temp[offset2] = '\0';
-                sscanf(buf_temp, "%d", &width);
-                offset1++;
-                offset2 = 0;
-            }
-        }
+        int del;
+        // int offset2 = 0;
+        // int post = 0;
+        // while (*(str+offset1) != '\0') {
+        //     if (*(str+offset1) != 'x') {
+        //         buf_temp[offset2] = *(str+offset1);
+        //         offset1++;
+        //         offset2++;
+        //     } else {
+        //         buf_temp[offset2] = '\0';
+        //         sscanf(buf_temp, "%d", &width);
+        //         offset1++;
+        //         offset2 = 0;
+        //     }
+        // }
 
-        buf_temp[offset2] = '\0';
-        sscanf(buf_temp, "%d", &height);
+        // buf_temp[offset2] = '\0';
+        // sscanf(buf_temp, "%d", &height);
+        sscanf(str, "%dx%d", &width, &height);
 
         // Read file to rgb and get size
         readFile(rgb_temp_dir, &rgb, width*height*3);
+
+        if  ((del = remove(rgb_temp_dir)) != 0) {
+            printf("ERROR: Can not delete the .rgb file\n" );
+            return 1;
+        }
 
         puts("Applying filter");
         int gray_size = sobelFilter(rgb, &gray, &sobel_h_res, &sobel_v_res, &contour_img, width, height);
@@ -282,6 +288,11 @@ int seq_server(int port)
 
             // close 
             pclose(fp);
+
+            if  ((del = remove(gray_dir)) != 0) {
+                printf("ERROR: Can not delete the .gray file\n" );
+            return 1;
+        }
 
             counter ++;
 
