@@ -103,50 +103,67 @@
             });
 
             graph2Data.datasets[0].data.push({
-              x:
-                serverData.server1.totalRequests /
-                serverData.server1.elapsedTime,
-              y: serverData.server1.elapsedTime,
+              x: serverData.server1.totalRequests,
+              y:
+                serverData.server1.elapsedTime /
+                serverData.server1.totalRequests,
             });
 
             graph2Data.datasets[1].data.push({
-              x:
-                serverData.server2.totalRequests /
-                serverData.server2.elapsedTime,
-              y: serverData.server2.elapsedTime,
+              x: serverData.server2.totalRequests,
+              y:
+                serverData.server2.elapsedTime /
+                serverData.server2.totalRequests,
             });
 
             graph2Data.datasets[2].data.push({
-              x:
-                serverData.server3.totalRequests /
-                serverData.server3.elapsedTime,
-              y: serverData.server3.elapsedTime,
+              x: serverData.server3.totalRequests,
+              y:
+                serverData.server3.elapsedTime /
+                serverData.server3.totalRequests,
             });
 
             graph3Data.datasets[0].data.push({
               x:
                 serverData.server1.totalRequests *
-                serverData.server1.processedPixels,
+                serverData.server1.pixelCount,
               y: serverData.server1.elapsedTime,
             });
 
             graph3Data.datasets[1].data.push({
               x:
                 serverData.server2.totalRequests *
-                serverData.server2.processedPixels,
+                serverData.server2.pixelCount,
               y: serverData.server2.elapsedTime,
             });
 
             graph3Data.datasets[2].data.push({
               x:
                 serverData.server3.totalRequests *
-                serverData.server3.processedPixels,
+                serverData.server3.pixelCount,
               y: serverData.server3.elapsedTime,
             });
 
             var chart1 = document.getElementById('canvas').getContext('2d');
             var chart2 = document.getElementById('canvas2').getContext('2d');
             var chart3 = document.getElementById('canvas3').getContext('2d');
+
+            var scales = {
+              yAxes: [
+                {
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+              xAxes: [
+                {
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+            };
 
             window.myBar = new Chart(chart1, {
               type: 'scatter',
@@ -162,17 +179,8 @@
                   text:
                     'Gráfica 1: Cantidad de solicitudes por tiempo de ejecución total',
                 },
-                /*
-            scales: {
-              yAxes: [
-                {
-                  ticks: {
-                    beginAtZero: true,
-                  },
-                },
-              ],
-            },
-            */
+
+                scales: scales,
               },
             });
 
@@ -189,6 +197,8 @@
                   text:
                     'Gráfica 2: Cantidad de solicitudes por tiempo promedio de ejecución',
                 },
+
+                scales: scales,
               },
             });
 
@@ -204,6 +214,8 @@
                   display: true,
                   text: 'Gráfica 3: Píxeles procesados por tiempo de ejecución',
                 },
+
+                scales: scales,
               },
             });
           });
