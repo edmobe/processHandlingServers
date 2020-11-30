@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
-
+#include "constant.h"
 //This function is to be used once we have confirmed that an image is to be sent
 //It should read and output an image file
 
@@ -30,10 +30,11 @@ int send_image(int socket, char *filename)
   fseek(picture, 0, SEEK_SET);
 
   //Send Picture Size
+  puts("Sending Picture Size");
   write(socket, (void *)&size, sizeof(int));
 
   //Send Picture as Byte Array
-
+  printf("Sending Picture Byte Array");
   do
   { //Read while we get errors that are due to signals.
     stat = read(socket, &read_buffer, 255);
@@ -96,6 +97,16 @@ void client_send(char *ip, int port, char *filename)
 
 int main(int argc, char const *argv[])
 {
-  client_send("127.0.0.1", 8100, "imagen.jpg");
+  for (int i = 0; i < 20; i++)
+  {
+    char str[3];
+    sprintf(str, "%d", i % 10);
+    char path[15] = "imagen";
+    strcat(path, str);
+    strcat(path, ".jpg");
+    printf("Sending %s\n", path);
+    client_send("127.0.0.1", portConst, path);
+  }
+
   return 0;
 }

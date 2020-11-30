@@ -8,24 +8,43 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
-#include "../general/queue.c"
+#include <dirent.h>
+#include "../../general/queue.c"
+#include "constant.h"
 
-void handleContinuesSignal(int sig)
+int countFiles()
 {
-  printf("Process %d resume\n", getpid());
+  int file_count = 0;
+  DIR *dirp;
+  struct dirent *entry;
+  dirp = opendir("../imgs");
+  while ((entry = readdir(dirp)) != NULL)
+  {
+    if (entry->d_type == DT_REG)
+    {
+      file_count++;
+    }
+  }
+  closedir(dirp);
+  return file_count;
 }
 
 int receive_image(int socket)
 { // Start function
-  printf("Client %d from process %d\n", socket, getpid());
+  printf("Attending client %d with process %d\n", socket, getpid());
+  int file_count = countFiles();
   int buffersize = 0, recv_size = 0, size = 0, read_size, write_size, packet_index = 1, stat;
   char imagearray[10241], verify = '1';
   FILE *image;
-  char path[20] = "image_";
+  char path[30] = "../imgs/image_";
   char extension[5] = ".jpg";
   char number_str[10];
-  sprintf(number_str, "%d", sizeQueue);
+  char pid[5];
+  sprintf(number_str, "%d", file_count);
+  sprintf(pid, "%d", getpid());
   strcat(path, number_str);
+  strcat(path, "_");
+  strcat(path, pid);
   strcat(path, extension);
 
   //Find the size of the image
@@ -33,7 +52,6 @@ int receive_image(int socket)
   {
     stat = read(socket, &size, sizeof(int));
   } while (stat < 0);
-
   char buffer[] = "Got it";
 
   //Send our verification signal
@@ -96,7 +114,7 @@ int receive_image(int socket)
       packet_index++;
     }
   }
-  enqueue(path);
+  //enqueue(path);
   fclose(image);
 
   return 1;
@@ -104,14 +122,14 @@ int receive_image(int socket)
 
 int server(int port)
 {
-  int processes = 3, procn;
+  int processes = 10, procn;
+  int pictures = 0;
   int socket_desc, new_socket, c, read_size, buffer = 0;
   struct sockaddr_in server, client;
   int fd[2];
   pipe(fd);
   char *readin;
   pid_t pid[processes];
-  signal(SIGCONT, handleContinuesSignal);
   //Create socket
   socket_desc = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_desc == -1)
@@ -134,62 +152,50 @@ int server(int port)
   puts("bind done");
 
   //Listen
-  listen(socket_desc, 3);
+  listen(socket_desc, 10);
 
-  /*if (pid[procn] == 0)
-  {
-    wait(NULL);
-    close(fd[1]);
-    char num[10];
-    read(fd[0], num, 10);
-    int n = atoi(num);
-    printf("Received %d was %d\n", getpid(), n);
-    receive_image(n);
-  }*/
-
-  //Accept and incoming connection
   puts("Waiting for incoming connections...");
   c = sizeof(struct sockaddr_in);
+  printf("Creating %d processes\n", processes);
+
+  for (procn = 0; procn < processes; procn++)
+  {
+    pid[procn] = fork();
+    if (pid[procn] == 0)
+    {
+      break;
+    }
+  }
+
   while (1)
   {
 
-    if ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c)))
-    {
-      puts("Connection accepted");
-    }
-    if (new_socket < 0)
-    {
-      perror("Accept Failed");
-      return 1;
-    }
-    for (procn = 0; procn < processes; procn++)
-    {
-      pid[procn] = fork();
-      if (pid[procn] == 0)
-      {
-        break;
-      }
-    }
-
     if (pid[procn] == 0)
     {
-      close(socket_desc);
-      while (1)
+      if ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c)))
       {
-        receive_image(new_socket);
-        close(new_socket);
+        puts("Connection accepted");
       }
+      if (new_socket < 0)
+      {
+        perror("Accept Failed");
+        return 1;
+      }
+      receive_image(new_socket);
+    }
+    else
+    {
+      close(socket_desc);
     }
 
     //receive_image(new_socket, inet_ntoa(client.sin_addr));
   }
   close(socket_desc);
   fflush(stdout);
-  //  close(socket_desc);
   return 0;
 }
 
 int main(int argc, char *argv[])
 {
-  server(8100);
+  server(portConst);
 }
