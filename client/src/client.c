@@ -180,13 +180,18 @@ int main(int argc, char *argv[]) {
 	// Use the argv[4] for the number of threads
 
 	double start, end;
+	omp_set_num_threads(atoi(argv[4]));
 
 	// start = clock();
 
 	start = omp_get_wtime();
 
-	for (int i = 0; i < atoi(argv[5]); i++) {
-		client_send(argv[1], atoi(argv[2]), name_str);
+
+	for (int j = 0; j < atoi(argv[5]); j++) {
+		#pragma omp parallel for 
+		for (int i = 0; i < atoi(argv[4]); i++) {
+			client_send(argv[1], atoi(argv[2]), name_str);
+		}
 	}
 
 	end = omp_get_wtime();
