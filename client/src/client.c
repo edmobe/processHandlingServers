@@ -120,7 +120,7 @@ void client_send(char *ip, int port, char *filename)
 int main(int argc, char *argv[]) { 
 
     FILE *fp;
-    // int counter = 0;
+    int width, height;
 
     if (argc != NO_INPUT) {
         printf("ERROR: num of param #%d, param needed #%d\n", argc, NO_INPUT);
@@ -174,24 +174,72 @@ int main(int argc, char *argv[]) {
         pclose(fp);
     }
 
+	// **********************************************************
+	// ***** Gets With and Height with imagemagick command ******
+	// **********************************************************
+	char path2[50] = "identify -format '%wx%h' ";
+	strcat(path2, name_str);
+	fp = popen(path2, "r");
+	if (fp == NULL) {
+		printf("ERROR: Failed to run command\n" );
+		return 1;
+	}
+
+	char buf_temp[100];
+	char *str = NULL;
+	char *temp = NULL;
+	unsigned int size1 = 1;  // start with size of 1 to make room for null terminator
+	unsigned int strlength;
+
+	while (fgets(buf_temp, sizeof(buf_temp), fp) != NULL) {
+		strlength = strlen(buf_temp);
+		temp = realloc(str, size1 + strlength);  // allocate room for the buf that gets appended
+		if (temp != NULL) {
+			str = temp;
+		}
+		strcpy(str + size1 - 1, buf_temp);     // append buffer to str
+		size1 += strlength; 
+	}
+	// close
+	pclose(fp);
+
+	int offset1 = 0;
+	int offset2 = 0;
+	int post = 0;
+	while (*(str+offset1) != '\0') {
+		if (*(str+offset1) != 'x') {
+			buf_temp[offset2] = *(str+offset1);
+			offset1++;
+			offset2++;
+		} else {
+			buf_temp[offset2] = '\0';
+			sscanf(buf_temp, "%d", &width);
+			offset1++;
+			offset2 = 0;
+		}
+	}
+
+	buf_temp[offset2] = '\0';
+	sscanf(buf_temp, "%d", &height);
+
 	// ----------ATENTION-----------------
 	// This makes iterations for the same image
 	// We need threads implementation
 	// Use the argv[4] for the number of threads
 
 	double start, end;
-
-	// start = clock();
+	omp_set_num_threads(atoi(argv[4]));
 
 	start = omp_get_wtime();
 
-	for (int i = 0; i < atoi(argv[5]); i++) {
-		client_send(argv[1], atoi(argv[2]), name_str);
+	for (int j = 0; j < atoi(argv[5]); j++) {
+		#pragma omp parallel for 
+		for (int i = 0; i < atoi(argv[4]); i++) {
+			client_send(argv[1], atoi(argv[2]), name_str);
+		}
 	}
 
 	end = omp_get_wtime();
-
-	// double abs = ((double)(end-start))/CLOCKS_PER_SEC;
 
 	printf("Abs time %f\n", end - start);
 
@@ -199,13 +247,13 @@ int main(int argc, char *argv[]) {
 	switch (atoi(argv[2])) {
 		case 9090: 
 			fp = fopen("../../server1/log.json", "w");
-			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"processedPixels\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
 			fclose(fp);
 			break;
 
 		case 8888:
 			fp = fopen("../../server2/log.json", "w");
-			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"processedPixels\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
 			fclose(fp);
 			break;
 
