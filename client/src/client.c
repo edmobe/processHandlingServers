@@ -4,6 +4,7 @@
 #include <errno.h>  
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <time.h>
 
 #include <unistd.h>   //file close
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
@@ -11,7 +12,9 @@
 #include <netdb.h> 
 #include <netinet/in.h> 
 #include <sys/socket.h> 
-#include <arpa/inet.h>    //socket close     
+#include <arpa/inet.h>    //socket close 
+
+#include <omp.h>
 
 #define SA struct sockaddr
 #define NO_INPUT 6
@@ -116,7 +119,7 @@ void client_send(char *ip, int port, char *filename)
 
 int main(int argc, char *argv[]) { 
 
-    // FILE *fp, *picture;
+    FILE *fp;
     // int counter = 0;
 
     if (argc != NO_INPUT) {
@@ -175,10 +178,30 @@ int main(int argc, char *argv[]) {
 	// This makes iterations for the same image
 	// We need threads implementation
 	// Use the argv[4] for the number of threads
+
+	double start, end;
+
+	// start = clock();
+
+	start = omp_get_wtime();
+
 	for (int i = 0; i < atoi(argv[5]); i++) {
 		client_send(argv[1], atoi(argv[2]), name_str);
 	}
 
+	end = omp_get_wtime();
+
+	// double abs = ((double)(end-start))/CLOCKS_PER_SEC;
+
+	printf("Abs time %f\n", end - start);
+
+	if (atoi(argv[2]) == 9090) {
+		fp = fopen("../../server1/log.json", "w");
+
+		fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f}", atoi(argv[5]) * atoi(argv[4]), end-start);
+
+		fclose(fp);
+	}
 
     return 0;
 }

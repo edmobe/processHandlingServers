@@ -17,30 +17,21 @@
 #include "../../filter/src/sobel.h"
 #include "../../filter/src/file_operations.h"
 
-#define MAX 80
 #define TRUE   1  
 #define FALSE  0
 #define NO_INPUT 2
 #define SA struct sockaddr 
-#define NET_BUF_SIZE 32 
-#define ENOUGH ((CHAR_BIT * sizeof(int) - 1) / 3 + 2)
-
-union LongChar {
-    char myByte[4];
-    long mylong;
-};
 
 // Driver function 
 int seq_server(int port) 
 { 
-	int sockfd, connfd, len, read_size, buffer = 0;
+	int sockfd, connfd, len;
     int width, height;
 	struct sockaddr_in servaddr, cli;
-    struct in_addr **addr_list;
-    char *readin;
 
-	//************Socket connection***************
-    //      Socket creation and varification
+	// ************ Socket connection ***************
+    // ****** Socket creation and varification ******
+    // **********************************************
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
 	if (sockfd == -1) { 
 		puts("ERROR: Socket creation failed...\n"); 
@@ -67,14 +58,10 @@ int seq_server(int port)
 
     len = sizeof(cli);
 
-    // char buff[MAX+1];
     char *name;
     char *msg_rcv2 = "Got it";
-	int n;
     FILE *image, *fp;
-    // int first = 0;
     int counter = 0;
-    // ssize_t nread;
 
     while (TRUE)
     {
@@ -93,9 +80,6 @@ int seq_server(int port)
             inet_ntoa(cli.sin_addr) , ntohs(cli.sin_port));
 
         fflush(stdout);
-        
-        // int counter1 = 0;
-        // while (counter1<1) {
 
         char temp_dir[20] = "../imgs/img_";
         char rgb_temp_dir[20] = "../imgs/img_";
@@ -124,46 +108,6 @@ int seq_server(int port)
 
         puts("Reply sent\n");
 
-        // bzero(buff, sizeof(buff));
-        // printf("Reading Picture Size\n");
-
-        // long size;
-        // if (read(connfd, &size, sizeof(long)) == 0) {
-        //     break;
-        // }
-
-        // if ((strncmp(buff, "exit", 5)) == 0) { 
-        //     printf("Client Exit...\n"); 
-        //     exit(0); 
-        // }
-
-        // union LongChar myUnion;
-        // myUnion.myByte[0] = buff[0];
-        // myUnion.myByte[1] = buff[1];
-        // myUnion.myByte[2] = buff[2];
-        // myUnion.myByte[3] = buff[3];
-
-
-        // long size = myUnion.mylong;
-
-        // Read Picture Name
-        // **In the new client, there won't be send name
-        // printf("Reading Picture Name\n");
-        // bzero(buff, sizeof(buff));
-        
-        // if (read(connfd, buff, MAX) == 0) {
-        //     break;
-        // }
-
-        // char *token = strtok(buff, "/");
-
-        // do {   
-        //     name = token;
-        //     token = strtok(NULL, "/");
-        // } while (token != NULL);
-
-        // printf("Name: %s\n", name);
-
         char counter_str[4];
         sprintf(counter_str, "%d", counter);
 
@@ -184,11 +128,6 @@ int seq_server(int port)
         strcat(gray_dir, "\0");
 
         printf("Dir to image: %s\n",temp_dir);
-
-        // First response message
-        // printf("Responding 1 to client\n");
-        // bzero(buff, sizeof(buff)); 
-        // write(connfd, msg_rcv1, MAX);
         
         //Read Picture Byte Array
         puts(" ");
@@ -242,7 +181,6 @@ int seq_server(int port)
             //Increment the total number of bytes read
             recv_size += read_size;
             packet_index++;
-            // }
         }
         fclose(image);
         
@@ -253,7 +191,6 @@ int seq_server(int port)
         strcat(path, temp_dir);
         strcat(path, " ");
         strcat(path, rgb_temp_dir);
-        // strcat(path, ".rgb");
 
         // Open the command for reading.
         printf("%s\n", path);
@@ -264,9 +201,11 @@ int seq_server(int port)
             return 1;
         }
         
-        // close 
         pclose(fp);
 
+        // **********************************************************
+        // ***** Gets With and Height with imagemagick command ******
+        // **********************************************************
         char path2[50] = "identify -format '%wx%h' ";
         strcat(path2, temp_dir);
         fp = popen(path2, "r");
@@ -312,17 +251,6 @@ int seq_server(int port)
         buf_temp[offset2] = '\0';
         sscanf(buf_temp, "%d", &height);
 
-        // if (size == 75441) {
-        //     width = 512;
-        //     height = 512;
-        // } else if (size == 6220800) {
-        //     width = 1920;
-        //     height = 1080;
-        // } else {
-        //     width = 512;
-        //     height = 512;
-        // }
-
         // Read file to rgb and get size
         readFile(rgb_temp_dir, &rgb, width*height*3);
 
@@ -357,10 +285,7 @@ int seq_server(int port)
 
             counter ++;
 
-        } 
-        // else {
-        //     int gray_size = sobelFilter(rgb, &gray, &sobel_h_res, &sobel_v_res, &contour_img, width, height);
-        // }
+        }
 
         close(connfd);
     }
