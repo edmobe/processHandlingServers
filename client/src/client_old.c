@@ -3,6 +3,7 @@
 #include <string.h>
 #include <errno.h>  
 #include <sys/types.h>
+#include <sys/ioctl.h>
 
 #include <unistd.h>   //file close
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
@@ -12,12 +13,10 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h>    //socket close     
 
-#define MAX 80 
-// #define PORT 9090 
+#define MAX 80
 #define SA struct sockaddr 
 #define OK       0
 #define NO_INPUT 4
-// #define TOO_LONG 2
 #define TRUE   1
 #define FALSE  0  
 
@@ -35,7 +34,7 @@
 int main(int argc, char *argv[]) { 
 
     FILE *fp, *picture;
-    int counter;
+    int counter = 0;
     char *exitmsg = "exit\0";
 
     if (argc != NO_INPUT) {
@@ -84,11 +83,7 @@ int main(int argc, char *argv[]) {
         printf("Image format present\n");
     }
 
-    char buff[MAX];
-
-	// int n;
-    // int rc;
-    int sockfd, connfd; 
+    int sockfd; 
     struct sockaddr_in servaddr, cli; 
 
     picture = fopen(name_str, "r");
@@ -102,10 +97,12 @@ int main(int argc, char *argv[]) {
     printf("Getting Picture Size\n");
     // printf(buff);
 
-    int size;
+    long size;
     fseek(picture, 0, SEEK_END);
     size = ftell(picture);
     fseek(picture, 0, SEEK_SET);
+
+    printf("Img size: %ld\n", size);
 
     bzero(&servaddr, sizeof(servaddr)); 
 
@@ -116,7 +113,6 @@ int main(int argc, char *argv[]) {
 
     //************Socket connection***************
     //      Socket creation and varification
-
     sockfd = socket(AF_INET, SOCK_STREAM, 0); 
     if (sockfd == -1) { 
         printf("ERROR: socket creation failed...\n"); 
@@ -133,48 +129,87 @@ int main(int argc, char *argv[]) {
     else
         printf("connected to the server..\n"); 
 
+    int first = 0;
+    char buff[MAX+1];
+    // name_str[name_len-1] = 'g';
+    // name_str[name_len-2] = 'n';
+    // name_str[name_len-3] = 'p';
+
     // This while is the times that the client comunicates with the server
     // after the handshake. Disconnects if the server leaves the handshake.
-    while (counter < 2)
+    while (counter < 1)
     {
+
         //Send Picture Size
         printf("Sending Picture Size\n");
-        write(sockfd, &size, sizeof(size));
+        bzero(buff, sizeof(buff));
+        long temp_size = size;
+        // _itoa_s(size,buff,sizeof(buff),10);
+        write(sockfd, &temp_size, sizeof(long));
+
+        // if (first) {
+        //     break;
+        // } else {
+        //     first = 1;
+        // }
 
         //Send Picture Name
         printf("Sending Picture Name\n");
-        write(sockfd, name_str, sizeof(name_str));
-
+        bzero(buff, sizeof(buff));
+        write(sockfd, name_str, MAX);
+        
+        // Recieves answer from server
+        bzero(buff, sizeof(buff)); 
+        read(sockfd, buff, MAX); 
+        printf("From Server : %s \n", buff);
+        
         //Send Picture as Byte Array (without need of a buffer as large as the image file)
         printf("Sending Picture as Byte Array\n");
-        char send_buffer[size]; // no link between BUFSIZE and the file size
-        int nb = fread(send_buffer, 1, sizeof(send_buffer), picture);
-        while(!feof(picture)) {
-            write(sockfd, send_buffer, nb);
-            nb = fread(send_buffer, 1, sizeof(send_buffer), picture);
+        // bzero(buff, sizeof(buff));
+        char img_array[size+1];
+        bzero(img_array, sizeof(img_array));
+        // char send_buffer[MAX]; // no link between BUFSIZE and the file size
+        int nb = fread(img_array, 1, size, picture);
+        img_array[size] = '\0';
+        // while(!feof(picture)) {
+        write(sockfd, img_array, size);
+        fseek(picture, 0, SEEK_SET);
+            // nb = fread(buff, 1, sizeof(buff), picture);
             // no need to bzero
-        }
-
+        // }
+        
+        // Recieves answer from server
         bzero(buff, sizeof(buff)); 
-        read(sockfd, buff, sizeof(buff)); 
+        read(sockfd, buff, MAX);
         printf("From Server : %s \n", buff);
+
+        // // Sends zeroes
+        // bzero(buff, sizeof(buff));
+        // write(sockfd, NULL, MAX);
+        
 
         // This is a termination code, but it could be done more fancy and not server
         // dependant.
         // if ((strncmp(buff, "exit", 4)) == 0) { 
         //     printf("Client Exit...\n"); 
         //     break; 
-        // } 
+        // } */
 
         counter++;
+
+        // sleep(0.01);
+
+
     }
-
-    // write(sockfd, exitmsg, sizeof(exitmsg));
-    printf("Client Exit...\n"); 
-
-    // close the socket
-    close(sockfd); 
+    
     fclose(picture);
+    // close the socket
+    close(sockfd);
+    
+
+    // printf("Client Exit...\n"); 
+    // bzero(buff, sizeof(buff));
+    // write(sockfd, "exit", sizeof(buff));
 
     return 0;
 }

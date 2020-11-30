@@ -13,292 +13,295 @@
 #include <arpa/inet.h>    //socket close     
 
 // For image processing
-#include "macros.h"
-#include "sobel.h"
-#include "file_operations.h"
+#include "../../filter/src/macros.h"
+#include "../../filter/src/sobel.h"
+#include "../../filter/src/file_operations.h"
 
-#define MAX 80 
-// #define PORT 9090
 #define TRUE   1  
 #define FALSE  0
 #define NO_INPUT 2
-#define R 2
-#define G 3
-#define B 4
 #define SA struct sockaddr 
-#define NET_BUF_SIZE 32 
-
-// int readcolor(char *image);
-
-// Function designed for file(picture) transfer between client and server. 
-void func(int sockfd);
 
 // Driver function 
-int main(int argc , char *argv[]) 
+int seq_server(int port) 
 { 
-	int sockfd, connfd, len, nBytes; 
+	int sockfd, connfd, len;
+    int width, height;
 	struct sockaddr_in servaddr, cli;
-    struct in_addr **addr_list;
-    // int addrlen = sizeof(servaddr);
-    // char net_buf[NET_BUF_SIZE]; 
 
+	// ************ Socket connection ***************
+    // ****** Socket creation and varification ******
+    // **********************************************
+	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
+	if (sockfd == -1) { 
+		puts("ERROR: Socket creation failed...\n"); 
+		return 1; 
+	}
+	bzero(&servaddr, sizeof(servaddr)); 
+
+    // assign IP, PORT 
+	servaddr.sin_family = AF_INET; 
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+	servaddr.sin_port =htons(port);
+
+	// Binding newly created socket to given IP and verification 
+	if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) { 
+		puts("ERROR: Socket bind failed...\n"); 
+		return 1;
+	} 
+
+	// Now server is ready to listen and verification 
+	if ((listen(sockfd, 10)) != 0) { 
+		puts("ERROR: Listen failed...\n"); 
+		return 1; 
+	} 
+
+    len = sizeof(cli);
+
+    char *name;
+    char *msg_rcv2 = "Got it";
+    FILE *image, *fp;
+    int counter = 0;
+
+    while (TRUE)
+    {
+        puts("Server listening..\n"); 
+
+        // Accept the data packet from client and verification 
+        if ((connfd = accept(sockfd, (SA*)&cli, &len)) < 0) { 
+            puts("ERROR: Server acccept failed...\n"); 
+            return 1; 
+        } 
+
+        //Somebody connected , get his details and print  
+        getpeername(connfd, (SA*)&cli, (socklen_t*)&len);
+
+        printf("- Host connected , ip %s , port %d -\n", 
+            inet_ntoa(cli.sin_addr) , ntohs(cli.sin_port));
+
+        fflush(stdout);
+
+        char temp_dir[20] = "../imgs/img_";
+        char rgb_temp_dir[20] = "../imgs/img_";
+        char result_dir[20] = "../imgs/sobel_";
+        char gray_dir[20] = "../imgs/img_";
+        int buffersize = 0, recv_size = 0, size = 0, 
+            read_size, write_size, packet_index = 1, stat;
+        
+        char imagearray[10241], verify = '1';
+
+        // Read Picture Size
+        do
+        {
+            stat = read(connfd, &size, sizeof(int));
+        } while (stat < 0);
+
+        printf("Size: %d\n", size);
+        puts(" ");
+
+
+        //Send our verification signal
+        do
+        {
+            stat = write(connfd, msg_rcv2, sizeof(int));
+        } while (stat < 0);
+
+        puts("Reply sent\n");
+
+        char counter_str[4];
+        sprintf(counter_str, "%d", counter);
+
+        strcat(temp_dir, counter_str);
+        strcat(temp_dir, ".jpg");
+        strcat(temp_dir, "\0");
+
+        strcat(rgb_temp_dir, counter_str);
+        strcat(rgb_temp_dir, ".rgb");
+        strcat(rgb_temp_dir, "\0");
+
+        strcat(result_dir, counter_str);
+        strcat(result_dir, ".jpg");
+        strcat(result_dir, "\0");
+
+        strcat(gray_dir, counter_str);
+        strcat(gray_dir, ".gray");
+        strcat(gray_dir, "\0");
+
+        printf("Dir to image: %s\n",temp_dir);
+        
+        //Read Picture Byte Array
+        puts(" ");
+        puts("Reading Picture Byte Array");
+        int need_exit = 0;
+        struct timeval timeout = {10, 0};
+
+        fd_set fds;
+        int buffer_fd, buffer_out;
+
+        image = fopen(temp_dir, "w");
+
+        if (image == NULL) {
+            printf("ERROR: Image didn't open\n");
+            fclose(image);
+            return 1;
+        }
+
+        while (recv_size < size)
+        {
+
+            FD_ZERO(&fds);
+            FD_SET(connfd, &fds);
+
+            buffer_fd = select(FD_SETSIZE, &fds, NULL, NULL, &timeout);
+
+            if (buffer_fd < 0) {
+                puts("ERROR: bad file descriptor set.");
+                return 1;
+            }
+
+            if (buffer_fd == 0) {
+                puts("ERROR: buffer read timeout expired.");
+                return 1;
+            }
+
+            // if (buffer_fd > 0) {
+            do {
+                read_size = read(connfd, imagearray, 10241);
+            } while (read_size < 0);
+
+            //Write the currently read data into our image file
+            write_size = fwrite(imagearray, 1, read_size, image);
+
+            if (read_size != write_size)
+            {
+                puts("ERROR: In read write");
+                return 1;
+            }
+
+            //Increment the total number of bytes read
+            recv_size += read_size;
+            packet_index++;
+        }
+        fclose(image);
+        
+        byte *rgb, *gray, *sobel_h_res, *sobel_v_res, *contour_img;
+
+        char path[50] = "convert ";
+
+        strcat(path, temp_dir);
+        strcat(path, " ");
+        strcat(path, rgb_temp_dir);
+
+        // Open the command for reading.
+        printf("%s\n", path);
+        
+        fp = popen(path, "r");
+        if (fp == NULL) {
+            printf("ERROR: Failed to run command\n" );
+            return 1;
+        }
+        
+        pclose(fp);
+
+        // **********************************************************
+        // ***** Gets With and Height with imagemagick command ******
+        // **********************************************************
+        char path2[50] = "identify -format '%wx%h' ";
+        strcat(path2, temp_dir);
+        fp = popen(path2, "r");
+        if (fp == NULL) {
+            printf("ERROR: Failed to run command\n" );
+            return 1;
+        }
+
+        char buf_temp[100];
+        char *str = NULL;
+        char *temp = NULL;
+        unsigned int size1 = 1;  // start with size of 1 to make room for null terminator
+        unsigned int strlength;
+
+        while (fgets(buf_temp, sizeof(buf_temp), fp) != NULL) {
+            strlength = strlen(buf_temp);
+            temp = realloc(str, size1 + strlength);  // allocate room for the buf that gets appended
+            if (temp != NULL) {
+                str = temp;
+            }
+            strcpy(str + size1 - 1, buf_temp);     // append buffer to str
+            size1 += strlength; 
+        }
+        // close
+        pclose(fp);
+
+        int offset1 = 0;
+        int offset2 = 0;
+        int post = 0;
+        while (*(str+offset1) != '\0') {
+            if (*(str+offset1) != 'x') {
+                buf_temp[offset2] = *(str+offset1);
+                offset1++;
+                offset2++;
+            } else {
+                buf_temp[offset2] = '\0';
+                sscanf(buf_temp, "%d", &width);
+                offset1++;
+                offset2 = 0;
+            }
+        }
+
+        buf_temp[offset2] = '\0';
+        sscanf(buf_temp, "%d", &height);
+
+        // Read file to rgb and get size
+        readFile(rgb_temp_dir, &rgb, width*height*3);
+
+        puts("Applying filter");
+        int gray_size = sobelFilter(rgb, &gray, &sobel_h_res, &sobel_v_res, &contour_img, width, height);
+
+        if (counter < 100) {
+
+            // Write sobel img to a file
+            writeFile(gray_dir, contour_img, gray_size);
+
+            char path1[100] = "convert -size ";
+
+            char size_str[7];
+            sprintf(size_str, "%dx%d ", width, height);
+            strcat(path1, size_str);
+            strcat(path1, "-depth 8 ");
+            
+            strcat(path1, gray_dir);
+            strcat(path1, " ");
+            strcat(path1, result_dir);
+
+            // Open the command for reading. 
+            fp = popen(path1, "r");
+            if (fp == NULL) {
+                printf("ERROR: Failed to run command\n" );
+                exit(1);
+            }
+
+            // close 
+            pclose(fp);
+
+            counter ++;
+
+        }
+
+        close(connfd);
+    }
+
+    close(sockfd);
+    fflush(stdout);
+
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
     if (argc != NO_INPUT) {
         printf("ERROR: num of param #%d, param needed #%d\n", argc, NO_INPUT);
         exit(1);
     }
 
-	// socket create and verification 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
-	if (sockfd == -1) { 
-		printf("ERROR: Socket creation failed...\n"); 
-		exit(1); 
-	} 
-	else
-		printf("Socket successfully created..\n"); 
-	bzero(&servaddr, sizeof(servaddr)); 
-
-
-    // assign IP, PORT 
-	servaddr.sin_family = AF_INET; 
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-	servaddr.sin_port =htons(atoi(argv[1]));
-
-	// Binding newly created socket to given IP and verification 
-	if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) { 
-		printf("ERROR: Socket bind failed...\n"); 
-		exit(1); 
-	} 
-	else
-		printf("Socket successfully binded..\n"); 
-
-	// Now server is ready to listen and verification 
-	if ((listen(sockfd, 5)) != 0) { 
-		printf("ERROR: Listen failed...\n"); 
-		exit(1); 
-	} 
-
-    while (TRUE)
-    {
-        printf("Server listening..\n"); 
-    
-        len = sizeof(cli); 
-
-        // Accept the data packet from client and verification 
-        connfd = accept(sockfd, (SA*)&cli, &len); 
-        if (connfd < 0) { 
-            printf("server acccept failed...\n"); 
-            exit(0); 
-        } 
-        else
-            printf("server acccept the client...\n"); 
-
-        // Last project ips acceptance configuration
-        // 
-        // const char* trusted = getenv("TRUSTED_HOSTS");
-        // const char* not_trusted = getenv("NOT_TRUSTED_HOSTS");
-
-        // printf("Are the ips ok?\n");
-        // if (trusted == NULL || trusted == "" || not_trusted == NULL) {
-        //     printf("Didn't get the ips correctly.\n");
-        //     exit(1);
-        // }
-
-        // printf("%s\n", trusted);
-        char *client_ip = inet_ntoa(cli.sin_addr);
-
-        // char *istrusted = strstr(trusted, client_ip);
-        // char *isnottrusted = strstr(not_trusted, client_ip);
-
-        // printf("%s\n", client_ip);
-
-        // if (istrusted != NULL && isnottrusted == NULL) {
-        //     func(connfd, 0);
-        // } else if (istrusted == NULL && isnottrusted != NULL) {
-        //     func(connfd, 1);
-        // } else {
-        //     printf("Rejected: ip %s\n", client_ip);
-        // }
-        func(connfd);
-
-
-
-    }
-    close(sockfd);
-}
-
-// int readcolor(char *image) {
-  
-//     FILE *fp;
-//     char path[100] = "convert ";
-//     char msg[20];
-//     strcat(path, image);
-//     strcat(path, " -scale 1x1\\! -format '%[pixel:s]\n' info:-");
-
-//     /* Open the command for reading. */
-//     printf("%s\n", path);
-//     fp = popen(path, "r");
-//     if (fp == NULL) {
-//         printf("Failed to run command\n" );
-//         exit(1);
-//     }
-
-//     /* Read the output a line at a time - output it. */
-//     // while (fgets(msg, sizeof(msg), fp) != NULL) {
-//     //     printf("%s\n", msg);
-//     // }
-
-//     if (fgets(msg, sizeof(msg), fp) == NULL) {
-//         printf("Bad reading in cmd\n");
-//         exit(1);
-//     }
-
-//     /* close */
-//     pclose(fp);
-
-//     // Function to convert a string to
-//     // integer array
-//     int arr[3]; 
-  
-//     int j = 0, i, sum = 0; 
-  
-//     // Traverse the string 
-//     for (i = 0; msg[i] != '\0'; i++) { 
-        
-//         if (j >= 3) {
-//             break;
-//         }
-
-//         if (i < 5)
-//             continue;
-//         // if str[i] is ', ' then split 
-//         else if (msg[i] == ',' || msg[i] == ')') {
-//             arr[j] = sum;
-//             sum = 0;
-//             j++;
-//         }
-//         // ignore others char
-//         else if (msg[i] == ' ' || msg[i] == '(' || msg[i] == 'b' || msg[i] == '.')
-//             continue;
-//         else
-//             // subtract str[i] by 48 to convert it to int 
-//             // Generate number by multiplying 10 and adding 
-//             // (int)(str[i]) 
-//             sum = sum * 10 + (msg[i] - '0'); 
-//     } 
-    
-//     // printf("R:%d G:%d B:%d\n", arr[0], arr[1], arr[2]);
-
-//     if (arr[0] > arr[1] && arr[0] > arr[2]) {
-//         return R;
-//     } else if (arr[1] > arr[2]) {
-//         return G;
-//     } else {
-//         return B;
-//     }
-
-//     // return 0;
-// }
-
-void func(int sockfd)
-{ 
-	char buff[MAX];
-    char *name;
-	int n;
-    FILE *image;
-
-    // char n_dir[100] = "/volume/Not_trusted/";
-    // char r_dir[100] = "/volume/R/";
-    // char g_dir[100] = "/volume/G/";
-    // char b_dir[100] = "/volume/B/";
-    char temp_dir[100] = "../imgs/";
-    char *msg_rcv = "Image processed!\0";
-
-    //Read Picture Size
-    printf("Reading Picture Size\n");
-    int size;
-    // bzero(size, sizeof(size));
-    read(sockfd, &size, sizeof(int));
-
-    //Read Picture Name
-    printf("Reading Picture Name\n");
-    bzero(buff, sizeof(buff));
-    read(sockfd, buff, sizeof(buff));
-
-    char *token = strtok(buff, "/");
-
-    do {   
-        name = token;
-        token = strtok(NULL, "/");
-    } while (token != NULL);
-
-    //Read Picture Byte Array
-    printf("Reading Picture Byte Array\n");
-    char p_array[size];
-    bzero(p_array, sizeof(p_array));
-    read(sockfd, p_array, size);
-
-    // if (type) {
-    //     //Convert it Back into Picture
-    //     printf("Converting Byte Array to Picture Not Trusted\n");
-    //     strcat(n_dir, name);
-    //     strcat(n_dir,"\0");
-    //     printf("%s\n",n_dir);
-    //     image = fopen(n_dir, "w");
-
-    //     if (image == NULL) {
-    //         printf("Image didn't open\n");
-    //         exit(0);
-    //     }
-    //     fwrite(p_array, 1, sizeof(p_array), image);
-    //     fclose(image);
-    // } else {
-        //Convert it Back into Picture
-    printf("Converting Byte Array to Picture Trusted\n");
-
-    strcat(temp_dir, name);
-    strcat(temp_dir,"\0");
-    printf("%s\n",temp_dir);
-    image = fopen(temp_dir, "w");
-
-    if (image == NULL) {
-        printf("Image didn't open\n");
-        exit(0);
-    }
-    fwrite(p_array, 1, sizeof(p_array), image);
-    fclose(image);
-
-    // bzero(buff, sizeof(buff)); 
-    write(sockfd, msg_rcv, sizeof(msg_rcv));
-
-    /*int cond = readcolor(temp_dir);
-
-    int del = remove(temp_dir);
-    if (!del)
-        printf("The file is Deleted successfully\n");
-    else {
-        printf("the file is not Deleted\n");
-        exit(1);
-    }
-
-    if (cond == R) {
-        strcat(r_dir, name);
-        strcat(r_dir,"\0");
-        image = fopen(r_dir, "w");
-    } else if (cond == G) {
-        strcat(g_dir, name);
-        strcat(g_dir,"\0");
-        image = fopen(g_dir, "w");
-    } else {
-        strcat(b_dir, name);
-        strcat(b_dir,"\0");
-        image = fopen(b_dir, "w");
-    }
-
-    if (image == NULL) {
-        printf("Image didn't open\n");
-        exit(0);
-    }
-    fwrite(p_array, 1, sizeof(p_array), image);
-    fclose(image);*/
-    // }
+    return seq_server(atoi(argv[1]));
 }
