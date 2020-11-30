@@ -123,6 +123,27 @@
               y: serverData.server3.elapsedTime,
             });
 
+            graph3Data.datasets[0].data.push({
+              x:
+                serverData.server1.totalRequests *
+                serverData.server1.processedPixels,
+              y: serverData.server1.elapsedTime,
+            });
+
+            graph3Data.datasets[1].data.push({
+              x:
+                serverData.server2.totalRequests *
+                serverData.server2.processedPixels,
+              y: serverData.server2.elapsedTime,
+            });
+
+            graph3Data.datasets[2].data.push({
+              x:
+                serverData.server3.totalRequests *
+                serverData.server3.processedPixels,
+              y: serverData.server3.elapsedTime,
+            });
+
             var chart1 = document.getElementById('canvas').getContext('2d');
             var chart2 = document.getElementById('canvas2').getContext('2d');
             var chart3 = document.getElementById('canvas3').getContext('2d');
@@ -173,7 +194,7 @@
 
             window.myBar = new Chart(chart3, {
               type: 'scatter',
-              data: graph2Data,
+              data: graph3Data,
               options: {
                 responsive: true,
                 legend: {
