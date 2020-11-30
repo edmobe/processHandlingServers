@@ -245,15 +245,21 @@ int main(int argc, char *argv[]) {
 
 
 	switch (atoi(argv[2])) {
-		case 9090: 
+		case 9090: // Sequential
 			fp = fopen("../../server1/log.json", "w");
-			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"processedPixels\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"pixelCount\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
 			fclose(fp);
 			break;
 
-		case 8888:
+		case 8888: // Heavy
 			fp = fopen("../../server2/log.json", "w");
-			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"processedPixels\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"pixelCount\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
+			fclose(fp);
+			break;
+
+		case 8070: // Pre-heavy
+			fp = fopen("../../server3/log.json", "w");
+			fprintf(fp, "{\"totalRequests\":%d, \"elapsedTime\":%f, \"pixelCount\":%d}", atoi(argv[5]) * atoi(argv[4]), end-start, width*height*3);
 			fclose(fp);
 			break;
 
